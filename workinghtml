@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wolfram Alpha Short Answers API Test</title>
+</head>
+<body>
+
+<h2>Find Critical Points of a Function</h2>
+
+<form id="queryForm">
+    <label for="functionInput">Enter a function (e.g., x^3 - 4x):</label>
+    <input type="text" id="functionInput" required>
+    <button type="submit">Find Critical Points</button>
+</form>
+
+<p id="result"></p>
+
+<script>
+    const form = document.getElementById('queryForm');
+	const resultElement = document.getElementById('result');
+
+	form.addEventListener('submit', async function(e) {
+    e.preventDefault();
+
+    const functionQuery = encodeURIComponent(document.getElementById('functionInput').value);
+
+    try {
+        const response = await fetch(`http://localhost:5000/getCriticalPoints?mathFunction=${functionQuery}`);
+        const jsonResponse = await response.json();
+
+        if (jsonResponse.error) {
+            resultElement.textContent = 'Error: ' + jsonResponse.error;
+        } else {
+            resultElement.textContent = 'Critical Points: ' + jsonResponse.result;
+        }
+    } catch (error) {
+        resultElement.textContent = 'Error fetching results.';
+    }
+});
+</script>
