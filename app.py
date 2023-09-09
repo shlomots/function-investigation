@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from sympy import symbols, diff, solve, sympify
+from sympy import symbols, diff, solve, sympify,log, exp
 from flask_cors import CORS
 
 app = Flask(__name__)
@@ -19,7 +19,7 @@ def get_critical_points():
         f_prime = diff(expr, x)
         # Solve for critical points
         critical_points = solve(f_prime, x)
-        critical_points = [round(point.evalf(),2) for point in critical_points]
+        critical_points = [float(str(round(point.evalf(),2)).rstrip('0').rstrip('.')) for point in critical_points]
         ##print(str(critical_points[0]))
         return jsonify({"result": str(critical_points)})
     except Exception as e:
