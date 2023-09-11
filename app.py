@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from sympy import symbols, diff, solve, sympify,log, exp
+from sympy import symbols, diff, solve, sympify,log, exp,sin,cos
 from flask_cors import CORS
 
 app = Flask(__name__)
