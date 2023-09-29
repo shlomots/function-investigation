@@ -15,8 +15,6 @@
     <button type="submit">Find Critical Points</button>
 </form>
 
-<p id="result"></p>
-
 <script>
     const form = document.getElementById('queryForm');
 	const resultElement = document.getElementById('result');
