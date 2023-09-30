@@ -17,6 +17,7 @@
 
 <p id="result"></p>
 
+
 <script>
     const form = document.getElementById('queryForm');
 	const resultElement = document.getElementById('result');
@@ -33,9 +34,52 @@
         if (jsonResponse.error) {
             resultElement.textContent = 'Error: ' + jsonResponse.error;
         } else {
-            resultElement.textContent = 'Critical Points: ' + jsonResponse.result;
+            let domainStr = `Domain: ${jsonResponse.domain}<br>`;
+    		let extremePointsStr = 'Extreme points:<br>';
+        jsonResponse.extreme_points.extreme_points.forEach(point => {
+            extremePointsStr += `Point: (${point.x},${point.y}), Type: ${point.type}<br>`;
+        });
+        let increasingIntervals = `increasing Intervals: ${jsonResponse.increasing_decreasing_intervals.increasing_intervals}<br>`
+        let decreasingIntervals = `decreasing Intervals: ${jsonResponse.increasing_decreasing_intervals.decreasing_intervals}<br>`
+        let horizontal_asymptote = `horizontal asymptote: [y =  ${jsonResponse.asymptotes.horizontal_asymptote}]`
+        let vertical_asymptotes = 'vertical_asymptotes:';
+        vertical_asymptotes+= `[`
+        jsonResponse.asymptotes.vertical_asymptotes.forEach((point, index, array) => {
+            vertical_asymptotes += `x = ${point}`;
+                if (index < array.length - 1) {
+                    vertical_asymptotes += ', ';
+                }
+            });
+        vertical_asymptotes += `]`
+        let inflection_points = 'Inflection_points:<br>'
+        jsonResponse.inflection_points.inflection_points.forEach(point => {
+            inflection_points += `Point: (${point.x},${point.y})<br>`;
+        });
+        let intersections_with_x = `intersections_with_x:<br>`;
+        intersections_with_x += `[`;
+        jsonResponse.intersections_with_axes.with_x.forEach((point, index, array) => {
+            intersections_with_x += `x = ${point.x}`;
+            if(index < array.length - 1){
+                intersections_with_x += `, `;
+            } 
+        });
+        intersections_with_x += `]`;
+        let intersections_with_y = `intersections_with_y:<br>`;
+        intersections_with_y += `[`;
+        jsonResponse.intersections_with_axes.with_y.forEach(point => {
+            intersections_with_y += `y = ${point.y}`;
+        });
+        intersections_with_y += `]`;
+        
+        
+        resultElement.innerHTML = `<p>${domainStr} <br/> ${extremePointsStr} <br/> 
+                                    ${increasingIntervals} <br/>${decreasingIntervals} <br/> 
+                                    ${horizontal_asymptote}<br/><br/> ${vertical_asymptotes}<br/><br/> 
+                                    ${inflection_points}<br/> ${intersections_with_x}<br/><br/> 
+                                    ${intersections_with_y}</p>`;
         }
     } catch (error) {
+        console.error(error);
         resultElement.textContent = 'Error fetching results.';
     }
 });

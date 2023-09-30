@@ -22,13 +22,13 @@ def find_domain_other(func):
 # Modify the find_extreme_points function to return a list of dictionaries
 def find_extreme_points(math_expr, x):
     f_prime = diff(math_expr, x)
-    critical_points = solve(f_prime, x,domain=S.Reals)
+    critical_points = [point.evalf() for point in solve(f_prime, x, domain=S.Reals)]
     filtered_critical_points = [number for number in critical_points if number.is_real]
     types = ["Minimum" if (f_prime.subs(x, p-1).evalf() < 0) and (f_prime.subs(x, p+1).evalf() > 0) 
              else "Maximum" if (f_prime.subs(x, p-1).evalf() > 0) and (f_prime.subs(x, p+1).evalf() < 0)
              else None
              for p in filtered_critical_points]
-    result ={"extreme_points":[{"point": float(point.evalf()), "type": t} for point, t in zip(filtered_critical_points, types)]}   # Change here
+    result = {"extreme_points": [{"x": round(float(point.evalf()),2),"y": round(float(math_expr.subs(x, point).evalf()),2) ,"type": t } for point, t in zip(filtered_critical_points, types)]}
     return result
 
 # Modify the find_increasing_decreasing_intervals function to return a list of tuples
@@ -61,9 +61,17 @@ def find_increasing_decreasing_intervals(math_expr, x):
         else:  # for the [-oo, oo] interval if it appears, skip or handle specially
             continue
         if f_prime.subs(x, test_point) > 0:
-            increasing_intervals.append((float(intervals[i]), float(intervals[i+1])))
+            increasing_intervals.append(
+                "[" + ("-oo" if intervals[i] == -S.Infinity else str(round(float(intervals[i]),2))) + 
+                ", " + 
+                ("oo" if intervals[i+1] == S.Infinity else str(round(float(intervals[i+1]),2))) + "]"
+                )
         else:
-            decreasing_intervals.append((float(intervals[i]), float(intervals[i+1])))
+            decreasing_intervals.append(
+                "[" + ("-oo" if intervals[i] == -S.Infinity else str(round(float(intervals[i]),2))) + 
+                ", " + 
+                ("oo" if intervals[i+1] == S.Infinity else str(round(float(intervals[i+1]),2))) + "]"
+            )
     
     result = {
         "increasing_intervals": increasing_intervals,
@@ -83,7 +91,7 @@ def find_asymptotes(math_expr, x):
     vertical_asymptotes = singularities(expr, x)
     
     result = {
-        "horizontal_asymptote": float(horizontal_asymptote.evalf()),
+        "horizontal_asymptote": str(float(horizontal_asymptote.evalf())),
         "vertical_asymptotes": [float(point.evalf()) for point in vertical_asymptotes]
     }
     return result
@@ -104,9 +112,10 @@ def find_inflection_points(math_expr, x):
         sign_left = f_double_prime.subs(x, test_point_left).evalf()
         sign_right = f_double_prime.subs(x, test_point_right).evalf()
         
-        # Check if the sign of the second derivative changes around the critical point
         if sign_left * sign_right < 0:  # One positive, one negative
-            inflection_points.append(float(p.evalf()))
+            x_value = round(float(p), 2)
+            y_value = round(float(math_expr.subs(x, p).evalf()), 2)
+            inflection_points.append({"x": x_value, "y":  y_value})
     
     result = {"inflection_points":inflection_points}
     
@@ -116,9 +125,9 @@ def find_inflection_points(math_expr, x):
 # Modify the find_intersections_with_axes function to return a list of dictionaries
 def find_intersections_with_axes(math_expr, x):
     x_intersections = solve(math_expr, x)
-    y_intersections = [float(math_expr.subs(x, 0).evalf())]
-    result = {"with x":[{"x": float(x_val.evalf()), "y": 0.0} for x_val in x_intersections], 
-              "with y": [{"x": 0.0, "y": y_val} for y_val in y_intersections]}  # Change here
+    y_intersections = [round(float(math_expr.subs(x, 0).evalf()) ,2)]
+    result = {"with_x":[{"x": round(float(x_val.evalf()),2), "y": 0.0} for x_val in x_intersections], 
+              "with_y": [{"x": 0.0, "y": y_val} for y_val in y_intersections]}  # Change here
     return result
 
 @app.route('/getCriticalPoints', methods=['GET', 'POST'])
@@ -150,7 +159,7 @@ def get_critical_points():
             "extreme_points": find_extreme_points(expr1, x),
             "increasing_decreasing_intervals": find_increasing_decreasing_intervals(expr, x),
             "asymptotes": find_asymptotes(expr, x),
-            "inflection_points": find_inflection_points(math_function, x),
+            "inflection_points": find_inflection_points(expr, x),
             "intersections_with_axes": find_intersections_with_axes(expr, x)
         }
 
