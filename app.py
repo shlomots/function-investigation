@@ -60,13 +60,14 @@ def find_increasing_decreasing_intervals(math_expr, x):
             test_point = (start + end) / 2
         else:  # for the [-oo, oo] interval if it appears, skip or handle specially
             continue
-        if f_prime.subs(x, test_point) > 0:
+        func_domain = continuous_domain(math_expr, x, S.Reals)
+        if func_domain.contains(test_point) and f_prime.subs(x, test_point) > 0:
             increasing_intervals.append(
                 "[" + ("-oo" if intervals[i] == -S.Infinity else str(round(float(intervals[i]),2))) + 
                 ", " + 
                 ("oo" if intervals[i+1] == S.Infinity else str(round(float(intervals[i+1]),2))) + "]"
                 )
-        else:
+        elif func_domain.contains(test_point):
             decreasing_intervals.append(
                 "[" + ("-oo" if intervals[i] == -S.Infinity else str(round(float(intervals[i]),2))) + 
                 ", " + 
@@ -99,12 +100,16 @@ def find_asymptotes(math_expr, x):
 # Modify the find_inflection_points function to return a list of float values
 def find_inflection_points(math_expr, x):
     f_double_prime = diff(math_expr, x, 2)  # Second derivative
-    critical_points = solve(f_double_prime, x, domain=S.Reals)  # Solve for zero
+    #critical_points = solve(f_double_prime, x, domain=S.Reals)  # Solve for zero
+    critical_points = [point.evalf() for point in solve(f_double_prime, x, domain=S.Reals)]
     filtered_critical_points = [number for number in critical_points if number.is_real]
     filtered_critical_points = sorted([point.evalf() for point in filtered_critical_points])  # Sort critical points
     
     inflection_points = []
+    func_domain = continuous_domain(math_expr, x, S.Reals)
     for p in filtered_critical_points:
+        if not func_domain.contains(p):
+            continue  # skip to the next iteration if p is not in the domain
         test_point_left = p - 0.1
         test_point_right = p + 0.1
         
@@ -124,8 +129,11 @@ def find_inflection_points(math_expr, x):
 
 # Modify the find_intersections_with_axes function to return a list of dictionaries
 def find_intersections_with_axes(math_expr, x):
+    func_domain = continuous_domain(math_expr, x, S.Reals)
     x_intersections = solve(math_expr, x)
-    y_intersections = [round(float(math_expr.subs(x, 0).evalf()) ,2)]
+    y_intersections = []
+    if  func_domain.contains(0):
+           y_intersections = [round(float(math_expr.subs(x, 0).evalf()) ,2)]
     result = {"with_x":[{"x": round(float(x_val.evalf()),2), "y": 0.0} for x_val in x_intersections], 
               "with_y": [{"x": 0.0, "y": y_val} for y_val in y_intersections]}  # Change here
     return result
