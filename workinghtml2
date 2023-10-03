@@ -23,6 +23,7 @@
     <button type="submit">חקור פונקציה</button>
 </form>
 <p id="result"></p>
+<img id="graph" alt="Graph Representation" style="display:none;"/>
 <script>
     const form = document.getElementById('queryForm');
 	const resultElement = document.getElementById('result');
@@ -46,7 +47,7 @@
         });
         let increasingIntervals = `תחומי עלייה: <span class="english" style="display: inline;">${jsonResponse.increasing_decreasing_intervals.increasing_intervals}</span><br>`;
         let decreasingIntervals = `תחומי ירידה: <span class="english" style="display: inline;"> ${jsonResponse.increasing_decreasing_intervals.decreasing_intervals}</span><br>`;
-        let horizontal_asymptote = `אסימםטוטות אופקיות: [y =  ${jsonResponse.asymptotes.horizontal_asymptote}]`
+        let horizontal_asymptote = `אסימפטוטות אופקיות: [y =  ${jsonResponse.asymptotes.horizontal_asymptote}]`
         let vertical_asymptotes = 'אסימפטוטות אנכיות';
         vertical_asymptotes+= `[`
         jsonResponse.asymptotes.vertical_asymptotes.forEach((point, index, array) => {
@@ -82,6 +83,9 @@
                                     ${horizontal_asymptote}<br/><br/> ${vertical_asymptotes}<br/><br/> 
                                     ${inflection_points}<br/> ${intersections_with_x}<br/><br/> 
                                     ${intersections_with_y}</p>`;
+        let graphImg = document.getElementById('graph');
+        graphImg.src = 'data:image/png;base64,' + jsonResponse.graph_representation; 
+        graphImg.style.display = 'block';
         }
     } catch (error) {
         console.error(error);

@@ -1,10 +1,18 @@
 from flask import Flask, request, jsonify
-from sympy import symbols, diff, solve, sympify,denom,log, exp,sin,cos,S , Symbol, solveset, limit
+from sympy import symbols, diff, solve, sympify,denom,log, exp,sin,cos,S , Symbol, solveset, limit,lambdify
 from sympy.calculus.util import continuous_domain, Interval, singularities
+import numpy as np
+from matplotlib import pyplot as plt
+import matplotlib
+import base64
+from io import BytesIO
+import plotly.graph_objects as go
 from flask_cors import CORS
+
 
 app = Flask(__name__)
 CORS(app)
+matplotlib.use('Agg')
 
 # Modify the find_domain function to return float values
 #def find_domain(math_expr, x):
@@ -24,8 +32,8 @@ def find_extreme_points(math_expr, x):
     f_prime = diff(math_expr, x)
     critical_points = [point.evalf() for point in solve(f_prime, x, domain=S.Reals)]
     filtered_critical_points = [number for number in critical_points if number.is_real]
-    types = ["Minimum" if (f_prime.subs(x, p-1).evalf() < 0) and (f_prime.subs(x, p+1).evalf() > 0) 
-             else "Maximum" if (f_prime.subs(x, p-1).evalf() > 0) and (f_prime.subs(x, p+1).evalf() < 0)
+    types = ["Minimum" if (f_prime.subs(x, p-0.1).evalf() < 0) and (f_prime.subs(x, p+0.1).evalf() > 0) 
+             else "Maximum" if (f_prime.subs(x, p-0.1).evalf() > 0) and (f_prime.subs(x, p+0.1).evalf() < 0)
              else None
              for p in filtered_critical_points]
     result = {"extreme_points": [{"x": round(float(point.evalf()),2),"y": round(float(math_expr.subs(x, point).evalf()),2) ,"type": t } for point, t in zip(filtered_critical_points, types)]}
@@ -59,7 +67,7 @@ def find_increasing_decreasing_intervals(math_expr, x):
         elif start != -S.Infinity and end != S.Infinity:  # if both boundaries are finite
             test_point = (start + end) / 2
         else:  # for the [-oo, oo] interval if it appears, skip or handle specially
-            continue
+            test_point = 0
         func_domain = continuous_domain(math_expr, x, S.Reals)
         if func_domain.contains(test_point) and f_prime.subs(x, test_point) > 0:
             increasing_intervals.append(
@@ -130,13 +138,47 @@ def find_inflection_points(math_expr, x):
 # Modify the find_intersections_with_axes function to return a list of dictionaries
 def find_intersections_with_axes(math_expr, x):
     func_domain = continuous_domain(math_expr, x, S.Reals)
-    x_intersections = solve(math_expr, x)
+    x_intersections = [point.evalf() for point in solve(math_expr, x, domain=S.Reals)]
+    filtered_x_intersections  = [number for number in x_intersections  if number.is_real]
     y_intersections = []
     if  func_domain.contains(0):
            y_intersections = [round(float(math_expr.subs(x, 0).evalf()) ,2)]
-    result = {"with_x":[{"x": round(float(x_val.evalf()),2), "y": 0.0} for x_val in x_intersections], 
+    result = {"with_x":[{"x": round(float(x_val.evalf()),2), "y": 0.0} for x_val in filtered_x_intersections], 
               "with_y": [{"x": 0.0, "y": y_val} for y_val in y_intersections]}  # Change here
     return result
+
+def graph_representation(expr):
+    try:
+        x = symbols('x')
+        # Define a lambda function for the expression
+        func = lambdify(x, expr, modules=["numpy"])
+
+        # Define the x range for the graph
+        x_vals = np.linspace(-10, 10, 20000)
+        y_vals = func(x_vals)
+
+        singular_points = singularities(expr, x)
+        epsilon = 0.01
+
+        for singular_point in singular_points:
+            if singular_point.is_real:
+                mask = (x_vals > float(singular_point) - epsilon) & (x_vals < float(singular_point) + epsilon)
+                y_vals[mask] = np.nan
+
+        
+        # Create a plot for the function
+        fig = go.Figure(data=go.Scatter(x=x_vals, y=y_vals, mode='lines'))
+        fig.update_layout(yaxis=dict(range=[-100, 100]))
+        # Convert the figure to an image
+        buf = BytesIO()
+        fig.write_image(buf, format='png')
+        buf.seek(0)
+
+        # Encode the BytesIO object to base64 string
+        graph_representation_str = base64.b64encode(buf.getvalue()).decode('utf8')
+        return graph_representation_str
+    except Exception as e:
+        return str(e)
 
 @app.route('/getCriticalPoints', methods=['GET', 'POST'])
 def get_critical_points():
@@ -168,7 +210,8 @@ def get_critical_points():
             "increasing_decreasing_intervals": find_increasing_decreasing_intervals(expr, x),
             "asymptotes": find_asymptotes(expr, x),
             "inflection_points": find_inflection_points(expr, x),
-            "intersections_with_axes": find_intersections_with_axes(expr, x)
+            "intersections_with_axes": find_intersections_with_axes(expr, x),
+            "graph_representation": graph_representation(expr)
         }
 
         return jsonify(result)
