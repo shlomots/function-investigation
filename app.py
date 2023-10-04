@@ -22,31 +22,37 @@ matplotlib.use('Agg')
 #    return [float(point.evalf()) for point in domain]  # Change here
 
 ###tchum hagdara
-def find_domain_other(func):
+def find_domain_other(func,domain_interval):
     x = Symbol("x")
-    domain = continuous_domain(func, x, S.Reals)
+    domain = continuous_domain(func, x, domain_interval)
 
     return str(domain)
 
 # Modify the find_extreme_points function to return a list of dictionaries
 def find_extreme_points(math_expr, x,domain_interval):
     f_prime = diff(math_expr, x)
-    critical_points = solveset(f_prime, x,domain =  domain_interval)
-    critical_points = [point.evalf() for point in solveset(f_prime, x,domain =  domain_interval)]
-    filtered_critical_points = [number for number in critical_points if number.is_real]
+    if f_prime.is_zero:
+        filtered_critical_points = []
+    else:
+        critical_points = solveset(f_prime, x,domain =  domain_interval)
+        critical_points = [point.evalf() for point in solveset(f_prime, x,domain =  domain_interval)]
+        filtered_critical_points = [number for number in critical_points if number.is_real]
     types = ["Minimum" if (f_prime.subs(x, p-0.1).evalf() < 0) and (f_prime.subs(x, p+0.1).evalf() > 0) 
              else "Maximum" if (f_prime.subs(x, p-0.1).evalf() > 0) and (f_prime.subs(x, p+0.1).evalf() < 0)
              else None
              for p in filtered_critical_points]
-    result = {"extreme_points": [{"x": round(float(point.evalf()),2),"y": round(float(math_expr.subs(x, point).evalf()),2) ,"type": t } for point, t in zip(filtered_critical_points, types)]}
+    result = {"extreme_points": [{"x": round(float(point.evalf()),2),"y": round(float(math_expr.subs(x, point).evalf()),2) ,"type": t } for point, t in zip(filtered_critical_points, types) if t is not None]}
     return result
 
 # Modify the find_increasing_decreasing_intervals function to return a list of tuples
 def find_increasing_decreasing_intervals(math_expr, x,domain_interval):
     f_prime = diff(math_expr, x)  # First derivative
-    critical_points = solveset(f_prime, x, domain=domain_interval)  # Find critical points in real number domain
-    filtered_critical_points = [number for number in critical_points if number.is_real]
-    filtered_critical_points = sorted([point.evalf() for point in critical_points])  # Sort critical points
+    if f_prime.is_zero:
+        filtered_critical_points = []
+    else:
+        critical_points = solveset(f_prime, x, domain=domain_interval)  # Find critical points in real number domain
+        filtered_critical_points = [number for number in critical_points if number.is_real]
+        filtered_critical_points = sorted([point.evalf() for point in critical_points])  # Sort critical points
     
     singular_points = singularities(math_expr, x, domain=domain_interval)
     all_points= set(filtered_critical_points).union(singular_points)
@@ -106,7 +112,7 @@ def find_asymptotes(math_expr, x, domain_interval):
     
     result = {
         "horizontal_asymptote": str(float(horizontal_asymptote.evalf())),
-        "vertical_asymptotes": [float(point.evalf()) for point in vertical_asymptotes]
+        "vertical_asymptotes": [round(float(point.evalf()),2) for point in vertical_asymptotes]
     }
     return result
 
@@ -114,9 +120,12 @@ def find_asymptotes(math_expr, x, domain_interval):
 def find_inflection_points(math_expr, x,domain_interval):
     f_double_prime = diff(math_expr, x, 2)  # Second derivative
     #critical_points = solve(f_double_prime, x, domain=S.Reals)  # Solve for zero
-    critical_points = [point.evalf() for point in solveset(f_double_prime, x, domain=domain_interval)]
-    filtered_critical_points = [number for number in critical_points if number.is_real]
-    filtered_critical_points = sorted([point.evalf() for point in filtered_critical_points])  # Sort critical points
+    if  f_double_prime.is_zero:
+        filtered_critical_points = []
+    else:
+        critical_points = [point.evalf() for point in solveset(f_double_prime, x, domain=domain_interval)]
+        filtered_critical_points = [number for number in critical_points if number.is_real]
+        filtered_critical_points = sorted([point.evalf() for point in filtered_critical_points])  # Sort critical points
     
     inflection_points = []
     func_domain = continuous_domain(math_expr, x, S.Reals)
@@ -152,28 +161,59 @@ def find_intersections_with_axes(math_expr, x,domain_interval):
               "with_y": [{"x": 0.0, "y": y_val} for y_val in y_intersections]}  # Change here
     return result
 
-def graph_representation(expr,domain_interval):
+def graph_representation(expr, domain_interval,extreme_points,inflection_points):
     try:
         x = symbols('x')
+        min_x = 0
+        max_x = 0
+        min_y = 0
+        max_y = 0
+        x_values_from_inflection = []
+        y_values_from_inflection = []
+        x_values_from_extreme = []
+        y_values_from_extreme = []
+        domain_start_numeric = float(domain_interval.start.evalf())
+        domain_end_numeric = float(domain_interval.end.evalf())
+
         # Define a lambda function for the expression
         func = lambdify(x, expr, modules=["numpy"])
 
-        # Define the x range for the graph
-        x_vals = np.linspace(-10, 10, 20000)
-        y_vals = func(x_vals)
+        if inflection_points["inflection_points"]:
+            x_values_from_inflection = [point['x'] for point in inflection_points["inflection_points"]]
+            y_values_from_inflection = [point['y'] for point in inflection_points["inflection_points"]]
+
+
+        if extreme_points["extreme_points"]: # if the list isn't empty
+            x_values_from_extreme = [point['x'] for point in extreme_points["extreme_points"]]
+            y_values_from_extreme = [point['y'] for point in extreme_points["extreme_points"]]
+
+        
+        all_x_values = x_values_from_inflection + x_values_from_extreme
+        all_y_values = y_values_from_inflection + y_values_from_extreme
+
+        if all_x_values:
+            min_x = min(all_x_values)
+            max_x = max(all_x_values)
+            min_y = min(all_y_values)
+            max_y = max(all_y_values)
+            x_vals = np.linspace(max(min_x - 0.5*abs(min_x)- 10,domain_start_numeric),min( max_x +0.5*abs(max_x)+ 10,domain_end_numeric), 20000)
+            y_vals = func(x_vals)
+        else:
+            x_vals = np.linspace(max(-10,domain_start_numeric), min(10,domain_end_numeric), 20000)
+            y_vals = func(x_vals)
 
         singular_points = singularities(expr, x,domain=domain_interval)
-        epsilon = 0.01
-
+        epsilon = 0.1
         for singular_point in singular_points:
             if singular_point.is_real:
                 mask = (x_vals > float(singular_point) - epsilon) & (x_vals < float(singular_point) + epsilon)
                 y_vals[mask] = np.nan
 
-        
         # Create a plot for the function
         fig = go.Figure(data=go.Scatter(x=x_vals, y=y_vals, mode='lines'))
-        fig.update_layout(yaxis=dict(range=[-10, 10]))
+        fig.update_yaxes(range=[min_y - 0.5*abs(min_y) - 10, max_y + 0.5*abs(max_y) + 10])
+        
+        
         # Convert the figure to an image
         buf = BytesIO()
         fig.write_image(buf, format='png')
@@ -182,9 +222,10 @@ def graph_representation(expr,domain_interval):
         # Encode the BytesIO object to base64 string
         graph_representation_str = base64.b64encode(buf.getvalue()).decode('utf8')
         return graph_representation_str
+
     except Exception as e:
         return str(e)
-
+    
 @app.route('/getCriticalPoints', methods=['GET', 'POST'])
 def get_critical_points():
     math_function = request.args.get('mathFunction')
@@ -203,20 +244,23 @@ def get_critical_points():
     
     # If the expression has sine or cosine, adjust the domain
         if contains_sine_or_cosine:
-            domain_interval = Interval(-4*pi, 4*pi)
+            domain_interval = Interval(-2*pi, 2*pi)
         else:
             domain_interval = S.Reals  # or whatever default you want
 
+        # these are caclculated first because other functions need these results.
+        extreme_points = find_extreme_points(expr1, x, domain_interval)
+        inflection_points = find_inflection_points(expr, x,domain_interval)
         # Aggregate all the results into a JSON response
         result = {
             #"critical_points": str(formatted_critical_points),
-            "domain": find_domain_other(expr1),
-            "extreme_points": find_extreme_points(expr1, x, domain_interval),
+            "domain": find_domain_other(expr1,domain_interval),
+            "extreme_points": extreme_points,
             "increasing_decreasing_intervals": find_increasing_decreasing_intervals(expr, x,domain_interval),
             "asymptotes": find_asymptotes(expr, x,domain_interval),
-            "inflection_points": find_inflection_points(expr, x,domain_interval),
+            "inflection_points": inflection_points,
             "intersections_with_axes": find_intersections_with_axes(expr, x,domain_interval),
-            "graph_representation": graph_representation(expr,domain_interval)
+            "graph_representation": graph_representation(expr,domain_interval,extreme_points,inflection_points)
         }
 
         return jsonify(result)
