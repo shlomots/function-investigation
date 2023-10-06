@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 
-from sympy import symbols, diff, solve, sympify,denom,log, exp,sin,cos,S , Symbol, solveset, limit,lambdify,Interval,pi,EmptySet,nan,Union
+from sympy import symbols, diff, solve, sympify,denom,log, exp,sin,cos,tan,S , Symbol, solveset, limit,lambdify,Interval,pi,EmptySet,nan,Union
 from sympy.calculus.util import continuous_domain, Interval, singularities
 import numpy as np
 from matplotlib import pyplot as plt
@@ -55,6 +55,8 @@ def find_increasing_decreasing_intervals(math_expr, x,domain_interval):
         filtered_critical_points = sorted([point.evalf() for point in critical_points])  # Sort critical points
     
     singular_points = singularities(math_expr, x, domain=S.Reals)
+    if domain_interval == Interval(-2*pi, 2*pi):
+        singular_points = singular_points.intersect(domain_interval)
     all_points= set(filtered_critical_points).union(singular_points)
     all_points = sorted(all_points)
 
@@ -63,48 +65,52 @@ def find_increasing_decreasing_intervals(math_expr, x,domain_interval):
     if isinstance(func_domain, Union):
         # If it's a union of intervals
         intervals_list = list(func_domain.args)
-        start_domain = intervals_list[0].start
-        end_domain = intervals_list[-1].end
     else:
     # If it's a single interval
         start_domain = func_domain.start
         end_domain = func_domain.end
-
-    # Adjust the start and end of your intervals list based on the function's domain
-    start_domain = max(start_domain, -S.Infinity)
-    end_domain = min(end_domain, S.Infinity)
-
-    intervals = [start_domain, *all_points, end_domain]
+        intervals_list = [Interval(start_domain, end_domain)]
     
     increasing_intervals = []
     decreasing_intervals = []
-    
-    for i in range(len(intervals) - 1):
-        # Test a point in the interval
-        start, end = intervals[i], intervals[i + 1]
-        # Determine the test point
-        if start == -S.Infinity and end != S.Infinity:  # if the left boundary is -oo
-            test_point = end - 1
-        elif end == S.Infinity and start != -S.Infinity:  # if the right boundary is oo
-            test_point = start + 1
-        elif start != -S.Infinity and end != S.Infinity:  # if both boundaries are finite
-            test_point = (start + end) / 2
-        else:  # for the [-oo, oo] interval if it appears, skip or handle specially
-            test_point = 0
-        func_domain = continuous_domain(math_expr, x,domain_interval)
-        if func_domain.contains(test_point) and f_prime.subs(x, test_point) > 0:
-            increasing_intervals.append(
-                "[" + ("-oo" if intervals[i] == -S.Infinity else str(round(float(intervals[i]),2))) + 
-                ", " + 
-                ("oo" if intervals[i+1] == S.Infinity else str(round(float(intervals[i+1]),2))) + "]"
+
+    # Adjust the start and end of your intervals list based on the function's domain
+    for interval in intervals_list:
+        start_domain = interval.start
+        end_domain = interval.end
+        start_domain = max(start_domain, -S.Infinity)
+        end_domain = min(end_domain, S.Infinity)
+        # Filter the critical and singular points that fall within the current domain
+        filtered_critical_points = [pt for pt in all_points if interval.contains(pt)]
+        # Create the intervals list
+        interval_filled = [start_domain, *filtered_critical_points, end_domain]
+
+        for i in range(len(interval_filled) - 1):
+            # Test a point in the interval
+            start, end = interval_filled[i], interval_filled[i + 1]
+            # Determine the test point
+            if start == -S.Infinity and end != S.Infinity:  # if the left boundary is -oo
+                test_point = end - 1
+            elif end == S.Infinity and start != -S.Infinity:  # if the right boundary is oo
+                test_point = start + 1
+            elif start != -S.Infinity and end != S.Infinity:  # if both boundaries are finite
+                test_point = (start + end) / 2
+            else:  # for the [-oo, oo] interval if it appears, skip or handle specially
+                test_point = 0
+            func_domain = continuous_domain(math_expr, x,domain_interval)
+            if func_domain.contains(test_point) and f_prime.subs(x, test_point) > 0:
+                increasing_intervals.append(
+                    "[" + ("-oo" if interval_filled[i] == -S.Infinity else str(round(float(interval_filled[i]),2))) + 
+                    ", " + 
+                    ("oo" if interval_filled[i+1] == S.Infinity else str(round(float(interval_filled[i+1]),2))) + "]"
+                    )
+            elif func_domain.contains(test_point):
+                decreasing_intervals.append(
+                    "[" + ("-oo" if interval_filled[i] == -S.Infinity else str(round(float(interval_filled[i]),2))) + 
+                    ", " + 
+                    ("oo" if interval_filled[i+1] == S.Infinity else str(round(float(interval_filled[i+1]),2))) + "]"
                 )
-        elif func_domain.contains(test_point):
-            decreasing_intervals.append(
-                "[" + ("-oo" if intervals[i] == -S.Infinity else str(round(float(intervals[i]),2))) + 
-                ", " + 
-                ("oo" if intervals[i+1] == S.Infinity else str(round(float(intervals[i+1]),2))) + "]"
-            )
-    
+        
     result = {
         "increasing_intervals": increasing_intervals,
         "decreasing_intervals": decreasing_intervals
@@ -116,7 +122,7 @@ def find_asymptotes(math_expr, x, domain_interval):
     # Find the horizontal asymptote.
     expr = math_expr
     
-    if not math_expr.has(sin(x)) and not math_expr.has(cos(x)):
+    if not math_expr.has(sin(x)) and not math_expr.has(cos(x)) and not math_expr.has(tan(x)) :
         horizontal_asymptote = limit(math_expr, x, S.Infinity)
     else: 
         horizontal_asymptote = nan
@@ -124,7 +130,9 @@ def find_asymptotes(math_expr, x, domain_interval):
     # Find the vertical asymptotes by finding the singularities of the function.
 
     vertical_asymptotes = singularities(expr, x,domain=S.Reals)
-    
+    #if it's trigonometric
+    if domain_interval == Interval(-2*pi, 2*pi):
+        vertical_asymptotes = vertical_asymptotes.intersect(domain_interval)
     result = {
         "horizontal_asymptote": str(float(horizontal_asymptote.evalf())),
         "vertical_asymptotes": [round(float(point.evalf()),2) for point in vertical_asymptotes]
@@ -231,6 +239,8 @@ def graph_representation(expr, domain_interval,extreme_points,inflection_points)
             y_vals = func(x_vals)
 
         singular_points = singularities(expr, x,domain=S.Reals)
+        if domain_interval == Interval(-2*pi, 2*pi):
+            singular_points = singular_points.intersect(domain_interval)
         epsilon = 0.1
         for singular_point in singular_points:
             if singular_point.is_real:
@@ -268,7 +278,7 @@ def get_critical_points():
         expr = expr1
         
         # First derivative
-        contains_sine_or_cosine = expr1.has(sin(x)) or expr1.has(cos(x))
+        contains_sine_or_cosine = expr1.has(sin(x)) or expr1.has(cos(x)) or expr1.has(tan(x))
     
     # If the expression has sine or cosine, adjust the domain
         if contains_sine_or_cosine:

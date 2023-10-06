@@ -66,7 +66,7 @@
 <h2>חקירת פונקציה</h2>
 
 <form id="queryForm">
-    <label for="functionInput">הכנס פונקציה כאן (למשל, x^3 - 4x):</label>
+    <label for="functionInput">הכנס פונקציה כאן (למשל, x^3 - 4*x):</label>
     <input type="text" id="functionInput" class="english" required>
     <button type="submit">חקור פונקציה</button>
 </form>

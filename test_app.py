@@ -19,7 +19,9 @@ class FlaskTestCase(unittest.TestCase):
                 "sqrt(x-3)",
                 "cos(x)",
                 "(sin(x))^2",
-                "x"
+                "x",
+                "sin(x)/cos(x)",
+                "tan(x)"
                 # Add more functions as needed
             ]
 
