@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 
-from sympy import symbols, diff, solve, sympify,denom,log, exp,sin,cos,S , Symbol, solveset, limit,lambdify,Interval,pi,EmptySet,nan
+from sympy import symbols, diff, solve, sympify,denom,log, exp,sin,cos,S , Symbol, solveset, limit,lambdify,Interval,pi,EmptySet,nan,Union
 from sympy.calculus.util import continuous_domain, Interval, singularities
 import numpy as np
 from matplotlib import pyplot as plt
@@ -54,12 +54,27 @@ def find_increasing_decreasing_intervals(math_expr, x,domain_interval):
         filtered_critical_points = [number for number in critical_points if number.is_real]
         filtered_critical_points = sorted([point.evalf() for point in critical_points])  # Sort critical points
     
-    singular_points = singularities(math_expr, x, domain=domain_interval)
+    singular_points = singularities(math_expr, x, domain=S.Reals)
     all_points= set(filtered_critical_points).union(singular_points)
     all_points = sorted(all_points)
 
-    # Add negative and positive infinity to the list of critical points to define the intervals
-    intervals = [-S.Infinity, *all_points, S.Infinity]
+    # Calculate the continuous domain of the function
+    func_domain = continuous_domain(math_expr, x, domain_interval)
+    if isinstance(func_domain, Union):
+        # If it's a union of intervals
+        intervals_list = list(func_domain.args)
+        start_domain = intervals_list[0].start
+        end_domain = intervals_list[-1].end
+    else:
+    # If it's a single interval
+        start_domain = func_domain.start
+        end_domain = func_domain.end
+
+    # Adjust the start and end of your intervals list based on the function's domain
+    start_domain = max(start_domain, -S.Infinity)
+    end_domain = min(end_domain, S.Infinity)
+
+    intervals = [start_domain, *all_points, end_domain]
     
     increasing_intervals = []
     decreasing_intervals = []
@@ -108,7 +123,7 @@ def find_asymptotes(math_expr, x, domain_interval):
     
     # Find the vertical asymptotes by finding the singularities of the function.
 
-    vertical_asymptotes = singularities(expr, x,domain=domain_interval)
+    vertical_asymptotes = singularities(expr, x,domain=S.Reals)
     
     result = {
         "horizontal_asymptote": str(float(horizontal_asymptote.evalf())),
@@ -152,6 +167,7 @@ def find_inflection_points(math_expr, x,domain_interval):
 # Modify the find_intersections_with_axes function to return a list of dictionaries
 def find_intersections_with_axes(math_expr, x,domain_interval):
     func_domain = continuous_domain(math_expr, x, domain_interval)
+    x_intersections = solveset(math_expr, x, domain=S.Reals)
     x_intersections = [point.evalf() for point in solveset(math_expr, x, domain=domain_interval)]
     filtered_x_intersections  = [number for number in x_intersections  if number.is_real]
     y_intersections = []
@@ -172,8 +188,20 @@ def graph_representation(expr, domain_interval,extreme_points,inflection_points)
         y_values_from_inflection = []
         x_values_from_extreme = []
         y_values_from_extreme = []
-        domain_start_numeric = float(domain_interval.start.evalf())
-        domain_end_numeric = float(domain_interval.end.evalf())
+        intervals_list = []
+
+        if isinstance(domain_interval, Union):
+        # If it's a union of intervals
+            intervals_list = list(domain_interval.args)
+            start_domain = intervals_list[0].start
+            end_domain = intervals_list[-1].end
+        else:
+        # If it's a single interval
+            start_domain = domain_interval.start
+            end_domain = domain_interval.end
+
+        domain_start_numeric = float(start_domain.evalf())
+        domain_end_numeric = float(end_domain.evalf())
 
         # Define a lambda function for the expression
         func = lambdify(x, expr, modules=["numpy"])
@@ -202,7 +230,7 @@ def graph_representation(expr, domain_interval,extreme_points,inflection_points)
             x_vals = np.linspace(max(-10,domain_start_numeric), min(10,domain_end_numeric), 20000)
             y_vals = func(x_vals)
 
-        singular_points = singularities(expr, x,domain=domain_interval)
+        singular_points = singularities(expr, x,domain=S.Reals)
         epsilon = 0.1
         for singular_point in singular_points:
             if singular_point.is_real:
@@ -246,7 +274,7 @@ def get_critical_points():
         if contains_sine_or_cosine:
             domain_interval = Interval(-2*pi, 2*pi)
         else:
-            domain_interval = S.Reals  # or whatever default you want
+            domain_interval = continuous_domain(expr, x, S.Reals)  # or whatever default you want
 
         # these are caclculated first because other functions need these results.
         extreme_points = find_extreme_points(expr1, x, domain_interval)
