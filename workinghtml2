@@ -66,7 +66,7 @@
 <h2>חקירת פונקציה</h2>
 
 <form id="queryForm">
-    <label for="functionInput">הכנס פונקציה כאן (למשל, x^3 - 4*x):</label>
+    <label for="functionInput">הכנס פונקציה כאן (למשל, x^3 - 4x):</label>
     <input type="text" id="functionInput" class="english" required>
     <button type="submit">חקור פונקציה</button>
 </form>
@@ -88,13 +88,13 @@
         if (jsonResponse.error) {
             resultElement.textContent = 'Error: ' + jsonResponse.error;
         } else {
-            let domainStr = `תחום: ${jsonResponse.domain}<br>`;
+            let domainStr = `תחום:<span class="english" style="display: inline;"> ${parseDomain(jsonResponse.domain)}</span><br>`;
     		let extremePointsStr = 'נקודות קיצון:<br>';
         jsonResponse.extreme_points.extreme_points.forEach(point => {
             extremePointsStr += `נקודה: <span class="english" style="display: inline;">(${point.x},${point.y})</span>, סוג: <span class="english" style="display: inline;">${point.type}</span><br>`;
         });
-        let increasingIntervals = `תחומי עלייה: <span class="english" style="display: inline;">${jsonResponse.increasing_decreasing_intervals.increasing_intervals}</span><br>`;
-        let decreasingIntervals = `תחומי ירידה: <span class="english" style="display: inline;"> ${jsonResponse.increasing_decreasing_intervals.decreasing_intervals}</span><br>`;
+        let increasingIntervals = `תחומי עלייה: <span class="english" style="display: inline;">${parseIncreasingDecreasing(jsonResponse.increasing_decreasing_intervals.increasing_intervals)}</span><br>`;
+        let decreasingIntervals = `תחומי ירידה: <span class="english" style="display: inline;"> ${parseIncreasingDecreasing(jsonResponse.increasing_decreasing_intervals.decreasing_intervals)}</span><br>`;
         let horizontal_asymptote = `אסימפטוטות אופקיות: [y =  ${jsonResponse.asymptotes.horizontal_asymptote}]`
         let vertical_asymptotes = 'אסימפטוטות אנכיות';
         vertical_asymptotes+= `[`
@@ -140,4 +140,53 @@
         resultElement.textContent = 'Error fetching results.';
     }
 });
+</script>
+<script>
+function parseDomain(domainStr) {
+    domainStr = domainStr.replace(/.open/g, "")
+    domainStr = domainStr.replace(/.Ropen/g, "")
+    domainStr = domainStr.replace(/.close/g, "")
+    domainStr = domainStr.replace(/.Rclose/g, "")
+    if (domainStr.includes("Reals")) {
+        return "all x";
+    } 
+    else if (domainStr.includes("Union(")) {
+        domainStr = domainStr.replace("Union(", "");      // Remove the "Union(" prefix
+        domainStr = domainStr.slice(0, -1);   
+        intervals = domainStr.split("),")// slice(1) to skip the initial empty string before the first "Union"
+        const formattedIntervals = intervals.map(interval => {
+             return interval.replace("Interval(", "").replace("Interval.(", "").replace(")", "").replace(",", " < x < ");
+        });
+        return formattedIntervals.join(", ").replace(")","");            // Remove the trailing ")"
+    }
+    else {
+        intervals = domainStr.split("),")// slice(1) to skip the initial empty string before the first "Union"
+        const formattedIntervals = intervals.map(interval => {
+             return interval.replace("Interval(", "").replace("Interval.(", "").replace(")", "").replace(",", " < x < ");
+        });
+        return formattedIntervals.join(", ").replace(")","");
+    }
+}
+function parseIncreasingDecreasing(intervals) {
+    if (!Array.isArray(intervals)) {
+        console.error("Expected an array, but received:", intervals);
+        return '';
+    }
+
+    const formattedIntervals = intervals.map(intervalStr => {
+        // Split the string to get the interval values
+        const interval = intervalStr.replace(/[\[\]]/g, '').split(',');
+
+        if (interval && interval.length === 2) {
+            let start = interval[0];
+            let end = interval[1];
+            return `${start} < x < ${end}`;
+        } else {
+            console.error("Unexpected interval format:", intervalStr);
+            return '';  // or some default string representation
+        }
+    });
+    
+    return formattedIntervals.join(", ");
+}
 </script>

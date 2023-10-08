@@ -5,18 +5,64 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wolfram Alpha Short Answers API Test</title>
     <style>
-        body {
-            direction: rtl;
-        }
-        .english {
-            direction: ltr;
-            unicode-bidi: embed;
-        }
-    </style>
+    body {
+        direction: rtl;
+        font-family: 'Arial', sans-serif; /* A basic, readable font */
+        background-color: #f5f5f5; /* A subtle background color */
+        color: #333; /* Dark text for readability */
+        margin: 0;
+        padding: 2em;
+    }
+    h2 {
+        text-align: center;
+        color: #0077CC; /* A nice shade of blue */
+    }
+    form {
+        max-width: 600px;
+        margin: 2em auto;
+        padding: 20px;
+        background-color: #fff;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1); /* subtle shadow */
+        border-radius: 10px;
+    }
+    label, button {
+        display: block;
+        margin-bottom: 10px;
+    }
+    button {
+        padding: 10px 15px;
+        background-color: #0077CC;
+        border: none;
+        color: #fff;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+    button:hover {
+        background-color: #005fa3;
+    }
+    .english {
+        direction: ltr;
+        unicode-bidi: embed;
+    }
+    p {
+        max-width: 600px;
+        margin: 20px auto;
+        padding: 20px;
+        background-color: #fff;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1); /* subtle shadow */
+        border-radius: 10px;
+    }
+    img {
+        max-width: 100%;
+        display: block;
+        margin: 2em auto;
+        border-radius: 10px;
+        box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+</style>
     
 </head>
-<body>
-
 <h2>חקירת פונקציה</h2>
 
 <form id="queryForm">
@@ -24,10 +70,8 @@
     <input type="text" id="functionInput" class="english" required>
     <button type="submit">חקור פונקציה</button>
 </form>
-
 <p id="result"></p>
-
-
+<img id="graph" alt="Graph Representation" style="display:none;"/>
 <script>
     const form = document.getElementById('queryForm');
 	const resultElement = document.getElementById('result');
@@ -44,14 +88,14 @@
         if (jsonResponse.error) {
             resultElement.textContent = 'Error: ' + jsonResponse.error;
         } else {
-            let domainStr = `תחום: ${jsonResponse.domain}<br>`;
+            let domainStr = `תחום:<span class="english" style="display: inline;"> ${parseDomain(jsonResponse.domain)}</span><br>`;
     		let extremePointsStr = 'נקודות קיצון:<br>';
         jsonResponse.extreme_points.extreme_points.forEach(point => {
             extremePointsStr += `נקודה: <span class="english" style="display: inline;">(${point.x},${point.y})</span>, סוג: <span class="english" style="display: inline;">${point.type}</span><br>`;
         });
-        let increasingIntervals = `תחומי עלייה: <span class="english" style="display: inline;">${jsonResponse.increasing_decreasing_intervals.increasing_intervals}</span><br>`;
-        let decreasingIntervals = `תחומי ירידה: <span class="english" style="display: inline;"> ${jsonResponse.increasing_decreasing_intervals.decreasing_intervals}</span><br>`;
-        let horizontal_asymptote = `אסימםטוטות אופקיות: [y =  ${jsonResponse.asymptotes.horizontal_asymptote}]`
+        let increasingIntervals = `תחומי עלייה: <span class="english" style="display: inline;">${parseIncreasingDecreasing(jsonResponse.increasing_decreasing_intervals.increasing_intervals)}</span><br>`;
+        let decreasingIntervals = `תחומי ירידה: <span class="english" style="display: inline;"> ${parseIncreasingDecreasing(jsonResponse.increasing_decreasing_intervals.decreasing_intervals)}</span><br>`;
+        let horizontal_asymptote = `אסימפטוטות אופקיות: [y =  ${jsonResponse.asymptotes.horizontal_asymptote}]`
         let vertical_asymptotes = 'אסימפטוטות אנכיות';
         vertical_asymptotes+= `[`
         jsonResponse.asymptotes.vertical_asymptotes.forEach((point, index, array) => {
@@ -87,10 +131,37 @@
                                     ${horizontal_asymptote}<br/><br/> ${vertical_asymptotes}<br/><br/> 
                                     ${inflection_points}<br/> ${intersections_with_x}<br/><br/> 
                                     ${intersections_with_y}</p>`;
+        let graphImg = document.getElementById('graph');
+        graphImg.src = 'data:image/png;base64,' + jsonResponse.graph_representation; 
+        graphImg.style.display = 'block';
         }
     } catch (error) {
         console.error(error);
         resultElement.textContent = 'Error fetching results.';
     }
 });
+</script>
+<script>
+function parseDomain(domainStr) {
+    if (domainStr.includes("Reals")) {
+        return "all x";
+    } else  {
+        domainStr = domainStr.replace("Union(","");
+        intervals = domainStr.split("),")// slice(1) to skip the initial empty string before the first "Union"
+        const formattedIntervals = intervals.map(interval => {
+             return interval.replace("Interval(", "").replace(")", "").replace(",", " < x < ");
+        });
+        return formattedIntervals.join(", ").replace(")","");
+    }
+}
+function parseIncreasingDecreasing(domainStr) { 
+		domainStr = JSON.stringify(domainStr)
+        intervals = domainStr.split("],")// slice(1) to skip the initial empty string before the first "Union"
+        const formattedIntervals = intervals.map(interval => {
+            interval = interval.replace("[", "") 
+             return interval.replace("[", "").replace("]", "").replace(",", " < x < ");
+        });
+        return formattedIntervals.join(", ").replace("]","").replace("/","")
+    
+}
 </script>

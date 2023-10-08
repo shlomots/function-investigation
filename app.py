@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
-
-from sympy import symbols, diff, solve, sympify,denom,log, exp,sin,cos,tan,S , Symbol, solveset, limit,lambdify,Interval,pi,EmptySet,nan,Union
+from sympy import symbols, diff, solve, sympify,denom,log, exp,sin,cos,tan,S , Symbol, solveset, limit,lambdify,Interval,pi,EmptySet,nan,Union, simplify
+import re
 from sympy.calculus.util import continuous_domain, Interval, singularities
 import numpy as np
 from matplotlib import pyplot as plt
@@ -9,6 +9,7 @@ import base64
 from io import BytesIO
 import plotly.graph_objects as go
 from flask_cors import CORS
+
 
 
 app = Flask(__name__)
@@ -31,6 +32,7 @@ def find_domain_other(func,domain_interval):
 # Modify the find_extreme_points function to return a list of dictionaries
 def find_extreme_points(math_expr, x,domain_interval):
     f_prime = diff(math_expr, x)
+    f_prime = simplify(f_prime)
     if f_prime.is_zero:
         filtered_critical_points = []
     else:
@@ -143,9 +145,11 @@ def find_asymptotes(math_expr, x, domain_interval):
 def find_inflection_points(math_expr, x,domain_interval):
     f_double_prime = diff(math_expr, x, 2)  # Second derivative
     #critical_points = solve(f_double_prime, x, domain=S.Reals)  # Solve for zero
+    f_double_prime = simplify(f_double_prime)
     if  f_double_prime.is_zero:
         filtered_critical_points = []
     else:
+        critical_points = solveset(f_double_prime, x, domain=domain_interval)
         critical_points = [point.evalf() for point in solveset(f_double_prime, x, domain=domain_interval)]
         filtered_critical_points = [number for number in critical_points if number.is_real]
         filtered_critical_points = sorted([point.evalf() for point in filtered_critical_points])  # Sort critical points
@@ -272,7 +276,12 @@ def get_critical_points():
     x = symbols('x')
     try:
         # Replace '^' with '**' and parse the expression
-        expr1 = sympify(math_function.replace('^', '**').replace('e', 'exp(1)'))
+        # Replace 4x to 4*x
+        math_function = re.sub(r'(\d)([a-zA-Z])', r'\1*\2', math_function)
+        math_function = re.sub(r'(\))(\()', r'\1*\2',math_function)
+        math_function = re.sub(r'(\d)(\()', r'\1*\2',math_function)
+        math_function = re.sub(r'(\))(\d)', r'\1*\2',math_function)
+        expr1 = simplify(math_function.replace('^', '**').replace('e', 'exp(1)'))
         
         # Calculate the expression
         expr = expr1
