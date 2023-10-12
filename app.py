@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from sympy import symbols, diff, solve, sympify,denom,log, exp,sin,cos,tan,S , Symbol, solveset, limit,lambdify,Interval,pi,EmptySet,nan,Union, simplify
+from sympy import symbols, diff, solve, sympify,denom,log, exp,sin,cos,tan,S , Symbol, solveset, limit,lambdify,Interval,pi,EmptySet,nan,Union, simplify,  FiniteSet,  solve_univariate_inequality
 import re
 from sympy.calculus.util import continuous_domain, Interval, singularities
 import numpy as np
@@ -37,10 +37,14 @@ def find_extreme_points(math_expr, x,domain_interval):
         filtered_critical_points = []
     else:
         critical_points = solveset(f_prime, x,domain =  domain_interval)
-        critical_points = [point.evalf() for point in solveset(f_prime, x,domain =  domain_interval)]
-        filtered_critical_points = [number for number in critical_points if number.is_real]
-    types = ["Minimum" if (f_prime.subs(x, p-0.1).evalf() < 0) and (f_prime.subs(x, p+0.1).evalf() > 0) 
-             else "Maximum" if (f_prime.subs(x, p-0.1).evalf() > 0) and (f_prime.subs(x, p+0.1).evalf() < 0)
+        if not isinstance(critical_points, FiniteSet):
+            filtered_critical_points = []
+        else:
+            critical_points = [point.evalf() for point in critical_points]
+            filtered_critical_points = [number for number in critical_points if number.is_real]
+
+    types = ["Minimum" if (f_prime.subs(x, p-0.01).evalf() < 0) and (f_prime.subs(x, p+0.01).evalf() > 0) 
+             else "Maximum" if (f_prime.subs(x, p-0.01).evalf() > 0) and (f_prime.subs(x, p+0.01).evalf() < 0)
              else None
              for p in filtered_critical_points]
     result = {"extreme_points": [{"x": round(float(point.evalf()),2),"y": round(float(math_expr.subs(x, point).evalf()),2) ,"type": t } for point, t in zip(filtered_critical_points, types) if t is not None]}
@@ -53,9 +57,11 @@ def find_increasing_decreasing_intervals(math_expr, x,domain_interval):
         filtered_critical_points = []
     else:
         critical_points = solveset(f_prime, x, domain=domain_interval)  # Find critical points in real number domain
-        filtered_critical_points = [number for number in critical_points if number.is_real]
-        filtered_critical_points = sorted([point.evalf() for point in critical_points])  # Sort critical points
-    
+        if not isinstance(critical_points, FiniteSet):
+            filtered_critical_points = []
+        else:
+            filtered_critical_points = [number for number in critical_points if number.is_real]
+            filtered_critical_points = sorted([point.evalf() for point in critical_points])  # Sort critical points
     singular_points = singularities(math_expr, x, domain=S.Reals)
     if domain_interval == Interval(-2*pi, 2*pi):
         singular_points = singular_points.intersect(domain_interval)
@@ -100,13 +106,14 @@ def find_increasing_decreasing_intervals(math_expr, x,domain_interval):
             else:  # for the [-oo, oo] interval if it appears, skip or handle specially
                 test_point = 0
             func_domain = continuous_domain(math_expr, x,domain_interval)
-            if func_domain.contains(test_point) and f_prime.subs(x, test_point) > 0:
+            f_prime_domain = continuous_domain(f_prime, x,domain_interval)
+            if func_domain.contains(test_point) and f_prime_domain.contains(test_point) and f_prime.subs(x, test_point) > 0:
                 increasing_intervals.append(
                     "[" + ("-oo" if interval_filled[i] == -S.Infinity else str(round(float(interval_filled[i]),2))) + 
                     ", " + 
                     ("oo" if interval_filled[i+1] == S.Infinity else str(round(float(interval_filled[i+1]),2))) + "]"
                     )
-            elif func_domain.contains(test_point):
+            elif func_domain.contains(test_point) and f_prime_domain.contains(test_point):
                 decreasing_intervals.append(
                     "[" + ("-oo" if interval_filled[i] == -S.Infinity else str(round(float(interval_filled[i]),2))) + 
                     ", " + 
@@ -119,6 +126,22 @@ def find_increasing_decreasing_intervals(math_expr, x,domain_interval):
     }
     return result
 
+
+def find_increasing_decreasing_intervals2(f_expr, x,domain_interval):
+    # Compute the first derivative
+    f_prime = diff(f_expr, x)
+
+    # Find where the derivative is positive (i.e., the function is increasing)
+    increasing_intervals = solve_univariate_inequality(f_prime > 0, x, relational=False, domain=S.Reals)
+
+    # Find where the derivative is negative (i.e., the function is decreasing)
+    decreasing_intervals = solve_univariate_inequality(f_prime < 0, x, relational=False, domain=S.Reals)
+
+    result = {
+        "increasing_intervals": str(increasing_intervals),
+        "decreasing_intervals": str(decreasing_intervals)
+    }
+    return result
 # Modify the find_asymptotes function to return a dictionary with float values
 def find_asymptotes(math_expr, x, domain_interval):
     # Find the horizontal asymptote.
@@ -150,9 +173,12 @@ def find_inflection_points(math_expr, x,domain_interval):
         filtered_critical_points = []
     else:
         critical_points = solveset(f_double_prime, x, domain=domain_interval)
-        critical_points = [point.evalf() for point in solveset(f_double_prime, x, domain=domain_interval)]
-        filtered_critical_points = [number for number in critical_points if number.is_real]
-        filtered_critical_points = sorted([point.evalf() for point in filtered_critical_points])  # Sort critical points
+        if not isinstance(critical_points, FiniteSet):
+            filtered_critical_points = []
+        else:
+            critical_points = [point.evalf() for point in critical_points]
+            filtered_critical_points = [number for number in critical_points if number.is_real]
+            filtered_critical_points = sorted([point.evalf() for point in filtered_critical_points])  # Sort critical points
     
     inflection_points = []
     func_domain = continuous_domain(math_expr, x, S.Reals)
@@ -179,9 +205,12 @@ def find_inflection_points(math_expr, x,domain_interval):
 # Modify the find_intersections_with_axes function to return a list of dictionaries
 def find_intersections_with_axes(math_expr, x,domain_interval):
     func_domain = continuous_domain(math_expr, x, domain_interval)
-    x_intersections = solveset(math_expr, x, domain=S.Reals)
-    x_intersections = [point.evalf() for point in solveset(math_expr, x, domain=domain_interval)]
-    filtered_x_intersections  = [number for number in x_intersections  if number.is_real]
+    x_intersections = solveset(math_expr, x, domain=domain_interval)
+    if not isinstance(x_intersections, FiniteSet):
+        filtered_x_intersections = []
+    else:
+        x_intersections = [point.evalf() for point in x_intersections]
+        filtered_x_intersections  = [number for number in x_intersections  if number.is_real]
     y_intersections = []
     if  func_domain.contains(0):
            y_intersections = [round(float(math_expr.subs(x, 0).evalf()) ,2)]
@@ -245,7 +274,7 @@ def graph_representation(expr, domain_interval,extreme_points,inflection_points)
         singular_points = singularities(expr, x,domain=S.Reals)
         if domain_interval == Interval(-2*pi, 2*pi):
             singular_points = singular_points.intersect(domain_interval)
-        epsilon = 0.1
+        epsilon = 0.001
         for singular_point in singular_points:
             if singular_point.is_real:
                 mask = (x_vals > float(singular_point) - epsilon) & (x_vals < float(singular_point) + epsilon)
@@ -277,10 +306,12 @@ def get_critical_points():
     try:
         # Replace '^' with '**' and parse the expression
         # Replace 4x to 4*x
-        math_function = re.sub(r'(\d)([a-zA-Z])', r'\1*\2', math_function)
+        math_function = re.sub(r'(\d)(x|s|c|t|e)', r'\1*\2', math_function)
+        math_function = re.sub(r'(\))(x)', r'\1*\2', math_function)
+        math_function = re.sub(r'(x)(\()', r'\1*\2', math_function)
         math_function = re.sub(r'(\))(\()', r'\1*\2',math_function)
         math_function = re.sub(r'(\d)(\()', r'\1*\2',math_function)
-        math_function = re.sub(r'(\))(\d)', r'\1*\2',math_function)
+        math_function = re.sub(r'(\))(\d|x|s|c|t|e)', r'\1*\2',math_function)
         expr1 = simplify(math_function.replace('^', '**').replace('e', 'exp(1)'))
         
         # Calculate the expression

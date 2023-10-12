@@ -88,15 +88,16 @@
         if (jsonResponse.error) {
             resultElement.textContent = 'Error: ' + jsonResponse.error;
         } else {
-            let domainStr = `תחום:<span class="english" style="display: inline;"> ${parseDomain(jsonResponse.domain)}</span><br>`;
+            let domainStr = `תחום:<br><span class="english" style="display: inline;"> ${parseDomain(jsonResponse.domain)}</span><br>`;
     		let extremePointsStr = 'נקודות קיצון:<br>';
         jsonResponse.extreme_points.extreme_points.forEach(point => {
             extremePointsStr += `נקודה: <span class="english" style="display: inline;">(${point.x},${point.y})</span>, סוג: <span class="english" style="display: inline;">${point.type}</span><br>`;
         });
-        let increasingIntervals = `תחומי עלייה: <span class="english" style="display: inline;">${parseIncreasingDecreasing(jsonResponse.increasing_decreasing_intervals.increasing_intervals)}</span><br>`;
-        let decreasingIntervals = `תחומי ירידה: <span class="english" style="display: inline;"> ${parseIncreasingDecreasing(jsonResponse.increasing_decreasing_intervals.decreasing_intervals)}</span><br>`;
-        let horizontal_asymptote = `אסימפטוטות אופקיות: [y =  ${jsonResponse.asymptotes.horizontal_asymptote}]`
-        let vertical_asymptotes = 'אסימפטוטות אנכיות';
+        let increasingIntervals = `תחומי עלייה:<br> <span class="english" style="display: inline;">${parseIncreasingDecreasing(jsonResponse.increasing_decreasing_intervals.increasing_intervals)}</span><br>`;
+        let decreasingIntervals = `תחומי ירידה:<br> <span class="english" style="display: inline;"> ${parseIncreasingDecreasing(jsonResponse.increasing_decreasing_intervals.decreasing_intervals)}</span><br>`;
+        
+        let horizontal_asymptote = jsonResponse.asymptotes.horizontal_asymptote !== "inf"? `אסימפטוטות אופקיות:<br> [y = ${jsonResponse.asymptotes.horizontal_asymptote}]`:`אסימפטוטות אופקיות:<br>[]`;
+        let vertical_asymptotes = 'אסימפטוטות אנכיות: <br>';
         vertical_asymptotes+= `[`
         jsonResponse.asymptotes.vertical_asymptotes.forEach((point, index, array) => {
             vertical_asymptotes += `x = ${point}`;
@@ -143,29 +144,45 @@
 </script>
 <script>
 function parseDomain(domainStr) {
-    domainStr = domainStr.replace(/.open/g, "")
-    domainStr = domainStr.replace(/.Ropen/g, "")
-    domainStr = domainStr.replace(/.close/g, "")
-    domainStr = domainStr.replace(/.Rclose/g, "")
-    if (domainStr.includes("Reals")) {
-        return "all x";
-    } 
-    else if (domainStr.includes("Union(")) {
-        domainStr = domainStr.replace("Union(", "");      // Remove the "Union(" prefix
-        domainStr = domainStr.slice(0, -1);   
-        intervals = domainStr.split("),")// slice(1) to skip the initial empty string before the first "Union"
-        const formattedIntervals = intervals.map(interval => {
-             return interval.replace("Interval(", "").replace("Interval.(", "").replace(")", "").replace(",", " < x < ");
-        });
-        return formattedIntervals.join(", ").replace(")","");            // Remove the trailing ")"
+  if (domainStr.includes("Reals")) {
+    return "all x";
+  }
+
+  const regexp = /Interval(?:\.open|\.Ropen|\.Lopen|\.Rclose|\.Lclose)?\((-oo|[\d\*\-pi]+),\s*(oo|[\d\*\-pi]+)\)/g;
+
+  let match;
+  let intervals = [];
+
+  while ((match = regexp.exec(domainStr)) !== null) {
+    const type = match[0].substring(9, match[0].indexOf("(")); // Extract the type (e.g., .Ropen, .open)
+    const startValue = match[1];
+    const endValue = match[2];
+
+    let intervalStr;
+    switch (type) {
+      case "open":
+        intervalStr = `${startValue} < x < ${endValue}`;
+        break;
+      case "Ropen":
+        intervalStr = `${startValue} <= x < ${endValue}`;
+        break;
+      case "Lopen":
+        intervalStr = `${startValue} < x <= ${endValue}`;
+        break;
+      case "Rclose": // This will probably be reverse but kept for clarity
+        intervalStr = `${startValue} < x <= ${endValue}`;
+        break;
+      case "Lclose": // This will probably be reverse but kept for clarity
+        intervalStr = `${startValue} <= x < ${endValue}`;
+        break;
+      default:
+        intervalStr = `${startValue} <= x <= ${endValue}`;
+        break;
     }
-    else {
-        intervals = domainStr.split("),")// slice(1) to skip the initial empty string before the first "Union"
-        const formattedIntervals = intervals.map(interval => {
-             return interval.replace("Interval(", "").replace("Interval.(", "").replace(")", "").replace(",", " < x < ");
-        });
-        return formattedIntervals.join(", ").replace(")","");
-    }
+    intervals.push(intervalStr);
+  }
+  
+  return intervals.join(", ");
 }
 function parseIncreasingDecreasing(intervals) {
     if (!Array.isArray(intervals)) {

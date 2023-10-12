@@ -26,6 +26,26 @@ function parseDomain(domainStr) {
     }
 }
 
+function parseDomain2(domainStr) {
+    // Regular expression to capture numbers, oo, or -oo
+    const numberOrInfinity = /(-?oo|-?\d+)/;
+
+    // Replace Interval.open(a,b) to a < x < b
+    domainStr = domainStr.replace(/Interval\.open\((-?oo|-?\d+),(-?oo|-?\d+)\)/g, '$1 < x < $2');
+
+    // Replace Interval.Ropen(a,b) to a < x <= b
+    domainStr = domainStr.replace(/Interval\.Ropen\((-?oo|-?\d+),(-?oo|-?\d+)\)/g, '$1 < x <= $2');
+
+    // Replace Interval.Lopen(a,b) to a <= x < b
+    domainStr = domainStr.replace(/Interval\.Lopen\((-?oo|-?\d+),(-?oo|-?\d+)\)/g, '$1 <= x < $2');
+
+    // Replace Interval(a,b) to a <= x <= b
+    domainStr = domainStr.replace(/Interval\((-?oo|-?\d+),(-?oo|-?\d+)\)/g, '$1 <= x <= $2');
+    
+    return domainStr;
+}
+
+
 function parseIncreasingDecreasing(intervals) {
     if (!Array.isArray(intervals)) {
         console.error("Expected an array, but received:", intervals);
@@ -48,6 +68,48 @@ function parseIncreasingDecreasing(intervals) {
     
     return formattedIntervals.join(", ");
 }
-const domain = "Union(Interval.Ropen(-2*pi, -3*pi/2), Interval.open(-3*pi/2, -pi/2), Interval.open(-pi/2, pi/2), Interval.open(pi/2, 3*pi/2), Interval.Lopen(3*pi/2, 2*pi))"; // Replace with your actual input
-const parsedDomain = parseDomain(domain);
-console.log(parsedDomain);
+
+
+
+// const domain = "Union(Interval.Ropen(-2*pi, -3*pi/2), Interval.open(-3*pi/2, -pi/2), Interval.open(-pi/2, pi/2), Interval.open(pi/2, 3*pi/2), Interval.Lopen(3*pi/2, 2*pi))"; // Replace with your actual input
+// const parsedDomain = parseDomain2(domain);
+// console.log(parsedDomain);
+// const domainStr = "Union(Interval(-oo, 2), Interval(3, oo))";
+// const regex = /Interval\((-oo|\d+),\s*(-oo|\d+)\)/g;
+
+// for (const match of domainStr.matchAll(regex)) {
+//     console.log("Start of interval:", match[1]);
+//     console.log("End of interval:", match[2]);
+// }
+const regexp = /Interval(?:\.open|\.Ropen|\.Lopen|\.Rclose|\.Lclose)?\((-oo|\d+),\s*(oo|\d+)\)/g;
+const str = "Interval(3, 2)";
+let match;
+
+while ((match = regexp.exec(str)) !== null) {
+    const type = match[0].substring(9, match[0].indexOf("(")); // Extract the type (e.g., .Ropen, .open)
+    const startValue = match[1];
+    const endValue = match[2];
+
+    let formattedInterval;
+    switch (type) {
+        case "open":
+            formattedInterval = `${startValue} < x < ${endValue}`;
+            break;
+        case "Ropen":
+            formattedInterval = `${startValue} <= x < ${endValue}`;
+            break;
+        case "Lopen":
+            formattedInterval = `${startValue} < x <= ${endValue}`;
+            break;
+        case "Rclose": // This will probably be reverse but kept for clarity
+            formattedInterval = `${startValue} < x <= ${endValue}`;
+            break;
+        case "Lclose": // This will probably be reverse but kept for clarity
+            formattedInterval = `${startValue} <= x < ${endValue}`;
+            break;
+        default:
+            formattedInterval = `${startValue} <= x <= ${endValue}`;
+            break;
+    }
+    console.log(formattedInterval);
+}
