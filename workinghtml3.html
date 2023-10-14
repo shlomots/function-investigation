@@ -60,7 +60,34 @@
         border-radius: 10px;
         box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
-</style>
+    #loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(255, 255, 255, 0.8);
+    z-index: 1000;
+	}
+
+    .spinner {
+        border: 6px solid #f3f3f3;
+        border-top: 6px solid #0077CC;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+	</style>
     
 </head>
 <h2>חקירת פונקציה</h2>
@@ -70,20 +97,26 @@
     <input type="text" id="functionInput" class="english" required>
     <button type="submit">חקור פונקציה</button>
 </form>
+<div id="loading" style="display: none;">
+    <div class="spinner"></div>
+    <p>אנא המתן, מעבד נתונים...</p>
+</div>
 <p id="result"></p>
 <img id="graph" alt="Graph Representation" style="display:none;"/>
 <script>
     const form = document.getElementById('queryForm');
 	const resultElement = document.getElementById('result');
-
+	const loading = document.getElementById('loading');
 	form.addEventListener('submit', async function(e) {
     e.preventDefault();
+    loading.style.display = 'flex';  // Show the loading message
 
     const functionQuery = encodeURIComponent(document.getElementById('functionInput').value);
 
     try {
         const response = await fetch(`http://localhost:5000/getCriticalPoints?mathFunction=${functionQuery}`);
         const jsonResponse = await response.json();
+        loading.style.display = 'none';  // Hide the loading message once fetch request is completed
 
         if (jsonResponse.error) {
             resultElement.textContent = 'Error: ' + jsonResponse.error;
@@ -137,6 +170,7 @@
         graphImg.style.display = 'block';
         }
     } catch (error) {
+    	loading.style.display = 'none';
         console.error(error);
         resultElement.textContent = 'Error fetching results.';
     }

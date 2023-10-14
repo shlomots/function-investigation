@@ -218,7 +218,7 @@ def find_intersections_with_axes(math_expr, x,domain_interval):
               "with_y": [{"x": 0.0, "y": y_val} for y_val in y_intersections]}  # Change here
     return result
 
-def graph_representation(expr, domain_interval,extreme_points,inflection_points):
+def graph_representation(expr, domain_interval,extreme_points,inflection_points, intersections_with_axes):
     try:
         x = symbols('x')
         min_x = 0
@@ -229,6 +229,8 @@ def graph_representation(expr, domain_interval,extreme_points,inflection_points)
         y_values_from_inflection = []
         x_values_from_extreme = []
         y_values_from_extreme = []
+        x_values_from_intersections = []
+        y_values_from_intersections = []
         intervals_list = []
 
         if isinstance(domain_interval, Union):
@@ -255,17 +257,35 @@ def graph_representation(expr, domain_interval,extreme_points,inflection_points)
         if extreme_points["extreme_points"]: # if the list isn't empty
             x_values_from_extreme = [point['x'] for point in extreme_points["extreme_points"]]
             y_values_from_extreme = [point['y'] for point in extreme_points["extreme_points"]]
+        
+        if intersections_with_axes["with_x"]: # if the list isn't empty
+            x_values_from_intersections = [point['x'] for point in intersections_with_axes["with_x"]]
+
+        if intersections_with_axes["with_y"]: # if the list isn't empty
+            y_values_from_intersections = [point['y'] for point in intersections_with_axes["with_y"]]
 
         
-        all_x_values = x_values_from_inflection + x_values_from_extreme
-        all_y_values = y_values_from_inflection + y_values_from_extreme
+        all_x_values = x_values_from_inflection + x_values_from_extreme + x_values_from_intersections
+        all_y_values = y_values_from_inflection + y_values_from_extreme + y_values_from_intersections
+
+        max_distance_x = 0
+        for i in range(len(all_x_values) - 1):
+            for j in range(i+1, len(all_x_values)):  # Start from i+1 to avoid comparing the point with itself
+                distance = abs(all_x_values[j] - all_x_values[i])
+                max_distance_x = max(max_distance_x, distance)
+
+        max_distance_y = 0
+        for i in range(len(all_y_values) - 1):
+            for j in range(i+1, len(all_y_values)):  # Start from i+1 to avoid comparing the point with itself
+                distance = abs(all_y_values[j] - all_y_values[i])
+                max_distance_y = max(max_distance_y, distance)
 
         if all_x_values:
             min_x = min(all_x_values)
             max_x = max(all_x_values)
             min_y = min(all_y_values)
             max_y = max(all_y_values)
-            x_vals = np.linspace(max(min_x - 0.5*abs(min_x)- 10,domain_start_numeric),min( max_x +0.5*abs(max_x)+ 10,domain_end_numeric), 20000)
+            x_vals = np.linspace(max(min_x - 0.5*abs(min_x)- 10 - max_distance_x,domain_start_numeric),min( max_x +0.5*abs(max_x)+ 10 + max_distance_x,domain_end_numeric), 20000)
             y_vals = func(x_vals)
         else:
             x_vals = np.linspace(max(-10,domain_start_numeric), min(10,domain_end_numeric), 20000)
@@ -282,7 +302,7 @@ def graph_representation(expr, domain_interval,extreme_points,inflection_points)
 
         # Create a plot for the function
         fig = go.Figure(data=go.Scatter(x=x_vals, y=y_vals, mode='lines'))
-        fig.update_yaxes(range=[min_y - 0.5*abs(min_y) - 10, max_y + 0.5*abs(max_y) + 10])
+        fig.update_yaxes(range=[min_y - 0.5*abs(min_y) - 10 - max_distance_y , max_y + 0.5*abs(max_y) + 10 + max_distance_y])
         
         
         # Convert the figure to an image
@@ -329,6 +349,7 @@ def get_critical_points():
         # these are caclculated first because other functions need these results.
         extreme_points = find_extreme_points(expr1, x, domain_interval)
         inflection_points = find_inflection_points(expr, x,domain_interval)
+        intersections_with_axes = find_intersections_with_axes(expr, x,domain_interval)
         # Aggregate all the results into a JSON response
         result = {
             #"critical_points": str(formatted_critical_points),
@@ -337,8 +358,8 @@ def get_critical_points():
             "increasing_decreasing_intervals": find_increasing_decreasing_intervals(expr, x,domain_interval),
             "asymptotes": find_asymptotes(expr, x,domain_interval),
             "inflection_points": inflection_points,
-            "intersections_with_axes": find_intersections_with_axes(expr, x,domain_interval),
-            "graph_representation": graph_representation(expr,domain_interval,extreme_points,inflection_points)
+            "intersections_with_axes": intersections_with_axes,
+            "graph_representation": graph_representation(expr, domain_interval, extreme_points, inflection_points, intersections_with_axes)
         }
 
         return jsonify(result)
