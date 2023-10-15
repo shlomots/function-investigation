@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wolfram Alpha Short Answers API Test</title>
+    <script type="text/javascript" async
+      src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/MathJax.js?config=TeX-		MML-AM_CHTML">
+	</script>
     <style>
     body {
         direction: rtl;
@@ -121,6 +124,7 @@
         if (jsonResponse.error) {
             resultElement.textContent = 'Error: ' + jsonResponse.error;
         } else {
+        	let functionInLatex = `פונקציה: \\[ ${jsonResponse.latex} \\]`;
             let domainStr = `תחום:<br><span class="english" style="display: inline;"> ${parseDomain(jsonResponse.domain)}</span><br>`;
     		let extremePointsStr = 'נקודות קיצון:<br>';
         jsonResponse.extreme_points.extreme_points.forEach(point => {
@@ -160,7 +164,7 @@
         intersections_with_y += `]`;
         
         
-        resultElement.innerHTML = `<p>${domainStr} <br/> ${extremePointsStr} <br/> 
+        resultElement.innerHTML = `<p>${functionInLatex} <br/>${domainStr} <br/> ${extremePointsStr} <br/> 
                                     ${increasingIntervals} <br/>${decreasingIntervals} <br/> 
                                     ${horizontal_asymptote}<br/><br/> ${vertical_asymptotes}<br/><br/> 
                                     ${inflection_points}<br/> ${intersections_with_x}<br/><br/> 
@@ -169,6 +173,7 @@
         graphImg.src = 'data:image/png;base64,' + jsonResponse.graph_representation; 
         graphImg.style.display = 'block';
         }
+        MathJax.Hub.Queue(["Typeset", MathJax.Hub, resultElement]);
     } catch (error) {
     	loading.style.display = 'none';
         console.error(error);
@@ -182,7 +187,7 @@ function parseDomain(domainStr) {
     return "x כל";
   }
 
-  const regexp = /Interval(?:\.open|\.Ropen|\.Lopen|\.Rclose|\.Lclose)?\((-oo|[\d\*\-pi]+),\s*(oo|[\d\*\-pi]+)\)/g;
+  const regexp = /Interval(?:\.open|\.Ropen|\.Lopen|\.Rclose|\.Lclose)?\((-oo|[\d\*\-pi\/]+),\s*(oo|[\d\*\-pi\/]+)/g;
 
   let match;
   let intervals = [];

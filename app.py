@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from sympy import symbols, diff, solve, sympify,denom,log, exp,sin,cos,tan,S , Symbol, solveset, limit,lambdify,Interval,pi,EmptySet,nan,Union, simplify,  FiniteSet,  solve_univariate_inequality
+from sympy import symbols, diff, solve, sympify,denom,log, exp,sin,cos,tan,S , Symbol, solveset, limit,lambdify,Interval,pi,EmptySet,nan,Union, simplify,  FiniteSet,  solve_univariate_inequality,latex
 import re
 from sympy.calculus.util import continuous_domain, Interval, singularities
 import numpy as np
@@ -268,6 +268,7 @@ def graph_representation(expr, domain_interval,extreme_points,inflection_points,
         all_x_values = x_values_from_inflection + x_values_from_extreme + x_values_from_intersections
         all_y_values = y_values_from_inflection + y_values_from_extreme + y_values_from_intersections
 
+        # max_distance_x = all_x_values[0]
         max_distance_x = 0
         for i in range(len(all_x_values) - 1):
             for j in range(i+1, len(all_x_values)):  # Start from i+1 to avoid comparing the point with itself
@@ -281,10 +282,10 @@ def graph_representation(expr, domain_interval,extreme_points,inflection_points,
                 max_distance_y = max(max_distance_y, distance)
 
         if all_x_values:
-            min_x = min(all_x_values)
-            max_x = max(all_x_values)
-            min_y = min(all_y_values)
-            max_y = max(all_y_values)
+            min_x = min(all_x_values) if all_x_values else 0
+            max_x = max(all_x_values) if all_x_values else 0
+            min_y = min(all_y_values) if all_y_values else 0
+            max_y = max(all_y_values) if all_y_values else 0
             x_vals = np.linspace(max(min_x - 0.5*abs(min_x)- 10 - max_distance_x,domain_start_numeric),min( max_x +0.5*abs(max_x)+ 10 + max_distance_x,domain_end_numeric), 20000)
             y_vals = func(x_vals)
         else:
@@ -337,10 +338,11 @@ def get_critical_points():
         # Calculate the expression
         expr = expr1
         
+        
         # First derivative
         contains_sine_or_cosine = expr1.has(sin(x)) or expr1.has(cos(x)) or expr1.has(tan(x))
     
-    # If the expression has sine or cosine, adjust the domain
+        # If the expression has sine or cosine, adjust the domain
         if contains_sine_or_cosine:
             domain_interval = Interval(-2*pi, 2*pi)
         else:
@@ -352,7 +354,7 @@ def get_critical_points():
         intersections_with_axes = find_intersections_with_axes(expr, x,domain_interval)
         # Aggregate all the results into a JSON response
         result = {
-            #"critical_points": str(formatted_critical_points),
+            "latex" : latex(expr),
             "domain": find_domain_other(expr1,domain_interval),
             "extreme_points": extreme_points,
             "increasing_decreasing_intervals": find_increasing_decreasing_intervals(expr, x,domain_interval),
