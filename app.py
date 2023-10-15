@@ -26,7 +26,6 @@ matplotlib.use('Agg')
 def find_domain_other(func,domain_interval):
     x = Symbol("x")
     domain = continuous_domain(func, x, domain_interval)
-
     return str(domain)
 
 # Modify the find_extreme_points function to return a list of dictionaries
@@ -160,7 +159,7 @@ def find_asymptotes(math_expr, x, domain_interval):
         vertical_asymptotes = vertical_asymptotes.intersect(domain_interval)
         
     result = {
-        "horizontal_asymptote": str(float(horizontal_asymptote.evalf())),
+        "horizontal_asymptote": str(round(float(horizontal_asymptote.evalf()),2)),
         "vertical_asymptotes": [round(float(point.evalf()),2) for point in vertical_asymptotes]
     }
     return result
