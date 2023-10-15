@@ -133,7 +133,7 @@
         let increasingIntervals = `תחומי עלייה:<br> <span class="english" style="display: inline;">${parseIncreasingDecreasing(jsonResponse.increasing_decreasing_intervals.increasing_intervals)}</span><br>`;
         let decreasingIntervals = `תחומי ירידה:<br> <span class="english" style="display: inline;"> ${parseIncreasingDecreasing(jsonResponse.increasing_decreasing_intervals.decreasing_intervals)}</span><br>`;
         
-        let horizontal_asymptote = jsonResponse.asymptotes.horizontal_asymptote !== "inf"? `אסימפטוטות אופקיות:<br> [y = ${jsonResponse.asymptotes.horizontal_asymptote}]`:`אסימפטוטות אופקיות:<br>[]`;
+        let horizontal_asymptote = (jsonResponse.asymptotes.horizontal_asymptote !== "inf" && jsonResponse.asymptotes.horizontal_asymptote !== "nan") ? `אסימפטוטות אופקיות:<br> [y = ${jsonResponse.asymptotes.horizontal_asymptote}]`:`אסימפטוטות אופקיות:<br>[]`;
         let vertical_asymptotes = 'אסימפטוטות אנכיות: <br>';
         vertical_asymptotes+= `[`
         jsonResponse.asymptotes.vertical_asymptotes.forEach((point, index, array) => {

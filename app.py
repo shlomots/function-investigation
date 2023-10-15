@@ -158,6 +158,7 @@ def find_asymptotes(math_expr, x, domain_interval):
     #if it's trigonometric
     if domain_interval == Interval(-2*pi, 2*pi):
         vertical_asymptotes = vertical_asymptotes.intersect(domain_interval)
+        
     result = {
         "horizontal_asymptote": str(float(horizontal_asymptote.evalf())),
         "vertical_asymptotes": [round(float(point.evalf()),2) for point in vertical_asymptotes]
