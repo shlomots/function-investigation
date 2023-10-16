@@ -146,7 +146,7 @@ def find_asymptotes(math_expr, x, domain_interval):
     # Find the horizontal asymptote.
     expr = math_expr
     
-    if not math_expr.has(sin(x)) and not math_expr.has(cos(x)) and not math_expr.has(tan(x)) :
+    if not math_expr.has(sin) and not math_expr.has(cos) and not math_expr.has(tan) :
         horizontal_asymptote = limit(math_expr, x, S.Infinity)
     else: 
         horizontal_asymptote = nan
@@ -340,7 +340,7 @@ def get_critical_points():
         
         
         # First derivative
-        contains_sine_or_cosine = expr1.has(sin(x)) or expr1.has(cos(x)) or expr1.has(tan(x))
+        contains_sine_or_cosine = expr1.has(sin) or expr1.has(cos) or expr1.has(tan)
     
         # If the expression has sine or cosine, adjust the domain
         if contains_sine_or_cosine:
