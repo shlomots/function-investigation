@@ -334,10 +334,9 @@ def get_critical_points():
         math_function = re.sub(r'(\d)(\()', r'\1*\2',math_function)
         math_function = re.sub(r'(\))(\d|x|s|c|t|e)', r'\1*\2',math_function)
         expr1 = simplify(math_function.replace('^', '**').replace('e', 'exp(1)'))
-        
-        # Calculate the expression
         expr = expr1
-        
+        #expr2 is only for the latex.
+        expr2 = sympify(math_function.replace('^', '**').replace('e', 'exp(1)'))
         
         # First derivative
         contains_sine_or_cosine = expr1.has(sin) or expr1.has(cos) or expr1.has(tan)
@@ -354,7 +353,7 @@ def get_critical_points():
         intersections_with_axes = find_intersections_with_axes(expr, x,domain_interval)
         # Aggregate all the results into a JSON response
         result = {
-            "latex" : latex(expr),
+            "latex" : latex(expr2),
             "domain": find_domain_other(expr1,domain_interval),
             "extreme_points": extreme_points,
             "increasing_decreasing_intervals": find_increasing_decreasing_intervals(expr, x,domain_interval),
