@@ -56,25 +56,40 @@
         box-shadow: 0 0 10px rgba(0,0,0,0.1); /* subtle shadow */
         border-radius: 10px;
     }
+    .image-container {
+    	display: block;
+        position: relative;
+
+    }
+
     img {
         max-width: 100%;
-        display: block;
         margin: 2em auto;
         border-radius: 10px;
         box-shadow: 0 0 10px rgba(0,0,0,0.1);
     }
+
+    .image-text {
+        position: absolute;
+        top: 10px; /* Adjust as needed */
+        right: 25px; /* Adjust as needed */
+        background-color: rgba(255, 255, 255, 0.6); /* Semi-transparent white background */
+        padding: 5px;
+        border-radius: 5px;
+        font-size: 16px; /* Adjust as needed */
+    }
     #loading {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(255, 255, 255, 0.8);
-    z-index: 1000;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        flex-direction: column;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255, 255, 255, 0.8);
+        z-index: 1000;
 	}
 
     .spinner {
@@ -96,7 +111,7 @@
 <h2>חקירת פונקציה</h2>
 
 <form id="queryForm">
-    <label for="functionInput">הכנס פונקציה כאן (למשל, x^3 - 4x):</label>
+    <label for="functionInput"><strong> הכנס פונקציה כאן, למשל:</strong><br> <strong>פולינום</strong> - x^3 - 4x <br><strong>שורש</strong> - sqrt(x),sqrt(2x), sqrt((2x-5)) <br><strong>מנה</strong> - (x^2-5)/(x^3+4) <br><strong>לוגריתמיות</strong> - log(x), ln(x) <br><strong>טריגונומטריות</strong> - sin(x), cos(x), cos(x)^2</label>
     <input type="text" id="functionInput" class="english" required>
     <button type="submit">חקור פונקציה</button>
 </form>
@@ -105,7 +120,10 @@
     <p>אנא המתן, מעבד נתונים...</p>
 </div>
 <p id="result"></p>
-<img id="graph" alt="Graph Representation" style="display:none;"/>
+<div class="image-container">
+    <img id="graphImage" src="path/to/your/image.jpg" alt="Description of Image" style="display:none;">
+    <span class="image-text" id="graphText" style="display:none;" ><strong>גרף:</strong></span>
+</div>
 <script>
     const form = document.getElementById('queryForm');
 	const resultElement = document.getElementById('result');
@@ -124,44 +142,44 @@
         if (jsonResponse.error) {
             resultElement.textContent = 'Error: ' + jsonResponse.error;
         } else {
-        	let functionInLatex = `פונקציה: \\[ ${jsonResponse.latex} \\]`;
-            let domainStr = `תחום:<br><span class="english" style="display: inline;"> ${parseDomain(jsonResponse.domain)}</span><br>`;
-    		let extremePointsStr = 'נקודות קיצון:<br>';
+        	let functionInLatex = `<strong>פונקציה</strong>: \\[ ${jsonResponse.latex} \\]`;
+            let domainStr = `<strong>תחום הגדרה: </strong><br><span class="english" style="display: inline;"> ${parseDomain(jsonResponse.domain)}</span><br>`;
+    		let extremePointsStr = '<strong>נקודות קיצון:</strong><br>';
         jsonResponse.extreme_points.extreme_points.forEach(point => {
-            extremePointsStr += `נקודה: <span class="english" style="display: inline;">(${point.x},${point.y})</span>, סוג: <span class="english" style="display: inline;">${point.type}</span><br>`;
+            extremePointsStr += `נקודה: <span class="english" style="display: inline;">\\((${point.x},${point.y})\\)</span>, סוג: <span class="english" style="display: inline;">\\(${point.type}\\)</span><br>`;
         });
-        let increasingIntervals = `תחומי עלייה:<br> <span class="english" style="display: inline;">${parseIncreasingDecreasing(jsonResponse.increasing_decreasing_intervals.increasing_intervals)}</span><br>`;
-        let decreasingIntervals = `תחומי ירידה:<br> <span class="english" style="display: inline;"> ${parseIncreasingDecreasing(jsonResponse.increasing_decreasing_intervals.decreasing_intervals)}</span><br>`;
+        let increasingIntervals = `<strong>תחומי עלייה</strong>:<br> <span class="english" style="display: inline;">${parseIncreasingDecreasing(jsonResponse.increasing_decreasing_intervals.increasing_intervals)}</span><br>`;
+        let decreasingIntervals = `<strong>תחומי ירידה</strong>:<br> <span class="english" style="display: inline;"> ${parseIncreasingDecreasing(jsonResponse.increasing_decreasing_intervals.decreasing_intervals)}</span><br>`;
         
-        let horizontal_asymptote = (jsonResponse.asymptotes.horizontal_asymptote !== "inf" && jsonResponse.asymptotes.horizontal_asymptote !== "nan") ? `אסימפטוטות אופקיות:<br> [y = ${jsonResponse.asymptotes.horizontal_asymptote}]`:`אסימפטוטות אופקיות:<br>[]`;
-        let vertical_asymptotes = 'אסימפטוטות אנכיות: <br>';
-        vertical_asymptotes+= `[`
+        let horizontal_asymptote = (jsonResponse.asymptotes.horizontal_asymptote !== "inf" && jsonResponse.asymptotes.horizontal_asymptote !== "nan") ? `<strong>אסימפטוטות אופקיות</strong>:<br> \\([y = ${jsonResponse.asymptotes.horizontal_asymptote}]\\)`:`<strong>אסימפטוטות אופקיות</strong>:<br>[]`;
+        let vertical_asymptotes = '<strong>אסימפטוטות אנכיות</strong>: <br>';
+        vertical_asymptotes+= `\\([`
         jsonResponse.asymptotes.vertical_asymptotes.forEach((point, index, array) => {
             vertical_asymptotes += `x = ${point}`;
                 if (index < array.length - 1) {
                     vertical_asymptotes += ', ';
                 }
             });
-        vertical_asymptotes += `]`
-        let inflection_points = 'נקודות פיתול:<br>'
+        vertical_asymptotes += `]\\)`
+        let inflection_points = '<strong>נקודות פיתול</strong>:<br>'
         jsonResponse.inflection_points.inflection_points.forEach(point => {
-            inflection_points += `נקודה: <span class="english" style="display: inline;">(${point.x},${point.y})</span><br>`;
+            inflection_points += `נקודה: <span class="english" style="display: inline;">\\((${point.x},${point.y})\\)</span><br>`;
         });
-        let intersections_with_x = `נקודות חיתוך עם ציר ה-x:<br>`;
-        intersections_with_x += `[`;
+        let intersections_with_x = `<strong>נקודות חיתוך עם ציר ה-x:</strong><br>`;
+        intersections_with_x += `\\([`;
         jsonResponse.intersections_with_axes.with_x.forEach((point, index, array) => {
             intersections_with_x += `x = ${point.x}`;
             if(index < array.length - 1){
                 intersections_with_x += `, `;
             } 
         });
-        intersections_with_x += `]`;
-        let intersections_with_y = `נקודות חיתוך עם ציר ה-y:<br>`;
-        intersections_with_y += `[`;
+        intersections_with_x += `]\\)`;
+        let intersections_with_y = `<strong>נקודות חיתוך עם ציר ה-y:</strong><br>`;
+        intersections_with_y += `\\([`;
         jsonResponse.intersections_with_axes.with_y.forEach(point => {
             intersections_with_y += `y = ${point.y}`;
         });
-        intersections_with_y += `]`;
+        intersections_with_y += `]\\)`;
         
         
         resultElement.innerHTML = `<p>${functionInLatex} <br/>${domainStr} <br/> ${extremePointsStr} <br/> 
@@ -169,11 +187,14 @@
                                     ${horizontal_asymptote}<br/><br/> ${vertical_asymptotes}<br/><br/> 
                                     ${inflection_points}<br/> ${intersections_with_x}<br/><br/> 
                                     ${intersections_with_y}</p>`;
-        let graphImg = document.getElementById('graph');
+        let graphImg = document.getElementById('graphImage');
+        let graphText = document.getElementById('graphText');
         graphImg.src = 'data:image/png;base64,' + jsonResponse.graph_representation; 
         graphImg.style.display = 'block';
+        graphText.style.display = 'block';
         }
         MathJax.Hub.Queue(["Typeset", MathJax.Hub, resultElement]);
+        
     } catch (error) {
     	loading.style.display = 'none';
         console.error(error);
@@ -183,19 +204,20 @@
 </script>
 <script>
 function parseDomain(domainStr) {
+
   if (domainStr.includes("Reals")) {
-    return "x כל";
+    return "\\(x\\) כל";
   }
 
-const regexp = /Interval(?:\.open|\.Ropen|\.Lopen|\.Rclose|\.Lclose)?\((-oo|[\d\*\-pi\/]+|[\w\-]+\(.*?\)),\s*(oo|[\d\*\-pi\/]+|[\w\-]+\(.*?\))\)/g;
+  const regexp = /Interval(?:\.open|\.Ropen|\.Lopen|\.Rclose|\.Lclose)?\((-oo|[\d\*\-pi\/]+|[\w\-]+\(.*?\)),\s*(oo|[\d\*\-pi\/]+|[\w\-]+\(.*?\))\)/g;
 
   let match;
   let intervals = [];
 
   while ((match = regexp.exec(domainStr)) !== null) {
-    const type = match[0].substring(9, match[0].indexOf("(")); // Extract the type (e.g., .Ropen, .open)
-    const startValue = match[1];
-    const endValue = match[2];
+    const type = match[0].substring(9, match[0].indexOf("("));
+    const startValue = match[1] === "-oo" ? "-\\infty" : match[1];
+    const endValue = match[2] === "oo" ? "\\infty" : match[2];
 
     let intervalStr;
     switch (type) {
@@ -203,25 +225,23 @@ const regexp = /Interval(?:\.open|\.Ropen|\.Lopen|\.Rclose|\.Lclose)?\((-oo|[\d\
         intervalStr = `${startValue} < x < ${endValue}`;
         break;
       case "Ropen":
-        intervalStr = `${startValue} <= x < ${endValue}`;
+        intervalStr = `${startValue} \\leq x < ${endValue}`;
         break;
       case "Lopen":
-        intervalStr = `${startValue} < x <= ${endValue}`;
+      case "Rclose":
+        intervalStr = `${startValue} < x \\leq ${endValue}`;
         break;
-      case "Rclose": // This will probably be reverse but kept for clarity
-        intervalStr = `${startValue} < x <= ${endValue}`;
-        break;
-      case "Lclose": // This will probably be reverse but kept for clarity
-        intervalStr = `${startValue} <= x < ${endValue}`;
+      case "Lclose":
+        intervalStr = `${startValue} \\leq x < ${endValue}`;
         break;
       default:
-        intervalStr = `${startValue} <= x <= ${endValue}`;
+        intervalStr = `${startValue} \\leq x \\leq ${endValue}`;
         break;
     }
     intervals.push(intervalStr);
   }
   
-  return intervals.join(", ");
+  return `\\( ${intervals.join(", ")} \\)`;
 }
 function parseIncreasingDecreasing(intervals) {
     if (!Array.isArray(intervals)) {
@@ -243,6 +263,6 @@ function parseIncreasingDecreasing(intervals) {
         }
     });
     
-    return formattedIntervals.join(", ");
+    return `\\( ${formattedIntervals.join(", ")} \\)`;
 }
 </script>

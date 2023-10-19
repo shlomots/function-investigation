@@ -302,6 +302,7 @@ def graph_representation(expr, domain_interval,extreme_points,inflection_points,
                 y_vals[mask] = np.nan
 
         # Create a plot for the function
+        
         fig = go.Figure(data=go.Scatter(x=x_vals, y=y_vals, mode='lines'))
         fig.update_yaxes(range=[min_y - 0.5*abs(min_y) - 10 - max_distance_y , max_y + 0.5*abs(max_y) + 10 + max_distance_y])
         
