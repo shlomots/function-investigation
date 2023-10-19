@@ -254,8 +254,10 @@ function parseIncreasingDecreasing(intervals) {
         const interval = intervalStr.replace(/[\[\]]/g, '').split(',');
 
         if (interval && interval.length === 2) {
-            let start = interval[0];
-            let end = interval[1];
+        	
+            let start = interval[0] === "-oo" ? "-\\infty" : interval[0];
+            //the space before oo is intentional, fix needed on the backend side in the intervals function, that would be cleaner.
+            let end = interval[1] === " oo" ? "\\infty" : interval[1];
             return `${start} < x < ${end}`;
         } else {
             console.error("Unexpected interval format:", intervalStr);
