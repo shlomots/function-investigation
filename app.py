@@ -334,10 +334,10 @@ def get_critical_points():
         math_function = re.sub(r'(\))(\()', r'\1*\2',math_function)
         math_function = re.sub(r'(\d)(\()', r'\1*\2',math_function)
         math_function = re.sub(r'(\))(\d|x|s|c|t|e)', r'\1*\2',math_function)
-        expr1 = simplify(math_function.replace('^', '**').replace('e', 'exp(1)'))
+        expr1 = simplify(math_function.replace('^', '**').replace('e', 'exp(1)').replace('X', 'x'))
         expr = expr1
         #expr2 is only for the latex.
-        expr2 = sympify(math_function.replace('^', '**').replace('e', 'exp(1)'))
+        expr2 = sympify(math_function.replace('^', '**').replace('e', 'exp(1)').replace('X', 'x'))
         
         # First derivative
         contains_sine_or_cosine = expr1.has(sin) or expr1.has(cos) or expr1.has(tan)
